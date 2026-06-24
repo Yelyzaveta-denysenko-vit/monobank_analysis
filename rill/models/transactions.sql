@@ -1,6 +1,3 @@
--- Transactions mart: raw data enriched with categories, merchants, UAH amounts,
--- subscription/anomaly flags and tags. Categories come from the reference table
--- (this used to be a large CASE here). Displayed values are in Ukrainian.
 SELECT
     t.id,
     t.account_id,
@@ -26,14 +23,11 @@ SELECT
     t.balance,
     t.hold,
     t.comment,
-    -- Category and group from the reference table
     COALESCE(cat.name, 'Інше') AS category,
     COALESCE(cat.group_name, 'Інше') AS category_group,
     COALESCE(cat.kind, 'expense') AS category_kind,
-    -- Merchant from the dimension table
     COALESCE(m.normalized_name, '(без опису)') AS merchant,
     CASE WHEN t.amount < 0 THEN 'Витрата' ELSE 'Дохід' END AS tx_type,
-    -- Operation currency (may differ from the account currency)
     CASE
         WHEN t.currency_code = 980 THEN 'UAH'
         WHEN t.currency_code = 840 THEN 'USD'
@@ -41,7 +35,6 @@ SELECT
         WHEN t.currency_code = 203 THEN 'CZK'
         ELSE CAST(t.currency_code AS VARCHAR)
     END AS op_currency,
-    -- Analytics flags
     CASE WHEN an.transaction_id IS NOT NULL THEN 'Аномалія' ELSE 'Звичайна' END AS anomaly_flag,
     CASE WHEN rp.merchant_id IS NOT NULL THEN 'Регулярний' ELSE 'Разовий' END AS recurring_flag,
     COALESCE(tags_agg.tags, '') AS tags,

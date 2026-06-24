@@ -1,4 +1,3 @@
--- Budget plan/fact: per category/month limit vs actual spend.
 SELECT
     b.month,
     c.name AS category,

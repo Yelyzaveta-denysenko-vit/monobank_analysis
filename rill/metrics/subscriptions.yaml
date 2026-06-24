@@ -1,7 +1,6 @@
 type: metrics_view
 model: subscriptions
-# No time axis: subscriptions are a list, not a time series. Otherwise the
-# explore would filter payments by next_expected_date and some would disappear.
+# без часової осі: підписки — це перелік, а не часовий ряд
 
 dimensions:
   - name: merchant

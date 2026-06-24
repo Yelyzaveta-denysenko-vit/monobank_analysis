@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""Admin web panel: budgets, categorization rules, tags.
-
-Rill is read-only, so editing user data is delegated to this small app. After a
-change it writes to DuckDB, recomputes derived data if needed, and re-exports the
-affected Parquet files — Rill picks up the change automatically (file-watch).
-User-facing text is in Ukrainian; code/comments are in English.
-"""
-
 import time
 
 import duckdb
@@ -20,9 +12,8 @@ app = Flask(__name__)
 
 
 def get_con() -> duckdb.DuckDBPyConnection:
-    """Open the DB for writing, with retries. DuckDB allows only one writer per
-    file, and the sync container holds the lock while syncing (a few minutes on
-    first run due to NBU rate loading). Wait ~30s, then surface a friendly error."""
+    # DuckDB допускає лише одного письменника на файл, а контейнер sync тримає
+    # блокування під час синхронізації — чекаємо ~30 с, потім показуємо помилку
     for attempt in range(40):
         try:
             return duckdb.connect(DB_PATH)
@@ -55,7 +46,6 @@ def fallback_id(con) -> int:
 
 
 def recategorize_and_export(con):
-    """Rebuild category_id from the updated rules and export transactions."""
     categorize.assign_categories(con, fallback_id(con))
     export_tables(con, ["transactions", "categorization_rules"])
 
@@ -105,11 +95,9 @@ def index():
 
 @app.route("/dashboards")
 def dashboards():
-    """Redirect to the Rill dashboards."""
     return redirect(RILL_URL)
 
 
-# --- Budgets ---
 @app.route("/budgets", methods=["GET", "POST"])
 def budgets():
     con = get_con()
@@ -164,7 +152,6 @@ def budget_delete(bid):
     return redirect(url_for("budgets"))
 
 
-# --- Categorization rules ---
 @app.route("/rules", methods=["GET", "POST"])
 def rules():
     con = get_con()
@@ -223,7 +210,6 @@ def rule_delete(rid):
     return redirect(url_for("rules"))
 
 
-# --- Tags ---
 @app.route("/tags", methods=["GET", "POST"])
 def tags():
     con = get_con()

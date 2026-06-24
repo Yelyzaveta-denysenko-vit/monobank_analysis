@@ -1,10 +1,3 @@
-"""Pipeline configuration for the Monobank BI sync.
-
-Default paths point at a local ./data directory so the pipeline runs both
-locally during development and in Docker (where the paths are overridden via
-environment variables).
-"""
-
 import os
 import time
 from datetime import datetime
@@ -19,16 +12,11 @@ NBU_API_BASE = "https://bank.gov.ua/NBUStatService/v1/statdirectory"
 
 DB_PATH = os.getenv("DB_PATH", "data/db/mono.duckdb")
 PARQUET_DIR = os.getenv("PARQUET_DIR", "data/parquet")
-
-# URL of the Rill dashboards, used by the admin UI's "Dashboards" tab.
 RILL_URL = os.getenv("RILL_URL", "http://localhost:9010")
-
-# Initial load pulls this many days of history
 INITIAL_HISTORY_DAYS = int(os.getenv("INITIAL_HISTORY_DAYS", "365"))
 
-# ISO 4217: numeric code -> alphabetic code
 CURRENCY_NAMES = {980: "UAH", 840: "USD", 978: "EUR", 203: "CZK", 826: "GBP", 985: "PLN"}
-BASE_CURRENCY_CODE = 980  # UAH — base reporting currency
+BASE_CURRENCY_CODE = 980  # гривня — базова валюта звітності
 
 _start_time = time.time()
 

@@ -1,5 +1,3 @@
-"""Export tables to Parquet — the data source for Rill."""
-
 import os
 
 import duckdb
@@ -14,7 +12,6 @@ TABLES = [
 
 
 def export_tables(con: duckdb.DuckDBPyConnection, names: list[str]):
-    """Export the given tables to Parquet (for targeted updates from the UI)."""
     os.makedirs(PARQUET_DIR, exist_ok=True)
     for table in names:
         path = f"{PARQUET_DIR}/{table}.parquet"

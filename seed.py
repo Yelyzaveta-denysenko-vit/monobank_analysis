@@ -1,9 +1,3 @@
-"""Demo data for the product tables: budgets and tags.
-
-Needed so the plan/fact budget dashboard and the M:M link (transaction_tags)
-are non-empty on real data. Idempotent — re-running duplicates nothing.
-"""
-
 import duckdb
 
 from config import log
@@ -42,13 +36,12 @@ def seed_budgets(con: duckdb.DuckDBPyConnection):
 
 
 def seed_tags(con: duckdb.DuckDBPyConnection):
-    """Create tags and attach them to transactions (demonstrates the M:M link)."""
     for name in ["Підписка", "Валютна операція", "Велика покупка"]:
         con.execute("INSERT INTO tags (name) VALUES (?) ON CONFLICT DO NOTHING", [name])
 
     tag_id = dict(con.execute("SELECT name, id FROM tags").fetchall())
 
-    # "Підписка" — transactions of merchants from recurring_payments
+    # «Підписка» — транзакції продавців із recurring_payments
     con.execute("""
         INSERT INTO transaction_tags (transaction_id, tag_id)
         SELECT DISTINCT t.id, ?
@@ -58,14 +51,14 @@ def seed_tags(con: duckdb.DuckDBPyConnection):
         ON CONFLICT DO NOTHING
     """, [tag_id["Підписка"]])
 
-    # "Валютна операція" — everything not in hryvnia
+    # «Валютна операція» — усе, що не у гривні
     con.execute("""
         INSERT INTO transaction_tags (transaction_id, tag_id)
         SELECT id, ? FROM transactions WHERE currency_code <> 980
         ON CONFLICT DO NOTHING
     """, [tag_id["Валютна операція"]])
 
-    # "Велика покупка" — expense over 5000 UAH
+    # «Велика покупка» — витрата понад 5000 грн
     con.execute("""
         INSERT INTO transaction_tags (transaction_id, tag_id)
         SELECT id, ? FROM transactions

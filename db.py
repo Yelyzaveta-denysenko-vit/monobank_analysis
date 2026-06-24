@@ -1,10 +1,3 @@
-"""Database schema and initialization of all tables.
-
-Dimensional model: fact `transactions` + dimensions (accounts, categories,
-merchants, fx_rates), product entities (budgets, categorization_rules, tags,
-transaction_tags) and derived tables (recurring_payments, anomalies).
-"""
-
 import duckdb
 
 from config import log
@@ -17,7 +10,6 @@ def _seq(con, name):
 def init_db(con: duckdb.DuckDBPyConnection):
     log("Initializing DB schema...")
 
-    # --- Fact: transactions (raw API data + enrichment columns) ---
     con.execute("""
         CREATE TABLE IF NOT EXISTS transactions (
             id VARCHAR PRIMARY KEY,
@@ -42,7 +34,7 @@ def init_db(con: duckdb.DuckDBPyConnection):
             synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-    # Enrichment columns (kept compatible with an already-existing DB)
+    # колонки збагачення (додаються сумісно з уже наявною БД)
     for col, typ in [
         ("category_id", "INTEGER"),
         ("merchant_id", "INTEGER"),
@@ -50,7 +42,6 @@ def init_db(con: duckdb.DuckDBPyConnection):
     ]:
         con.execute(f"ALTER TABLE transactions ADD COLUMN IF NOT EXISTS {col} {typ}")
 
-    # --- Dimension: accounts ---
     con.execute("""
         CREATE TABLE IF NOT EXISTS accounts (
             id VARCHAR PRIMARY KEY,
@@ -66,7 +57,6 @@ def init_db(con: duckdb.DuckDBPyConnection):
         )
     """)
 
-    # --- Category reference + MCC mapping ---
     con.execute("""
         CREATE TABLE IF NOT EXISTS categories (
             id INTEGER PRIMARY KEY,
@@ -82,7 +72,6 @@ def init_db(con: duckdb.DuckDBPyConnection):
         )
     """)
 
-    # --- Dimension: merchants ---
     _seq(con, "merchants_seq")
     con.execute("""
         CREATE TABLE IF NOT EXISTS merchants (
@@ -96,7 +85,6 @@ def init_db(con: duckdb.DuckDBPyConnection):
         )
     """)
 
-    # --- NBU exchange rates ---
     con.execute("""
         CREATE TABLE IF NOT EXISTS fx_rates (
             rate_date DATE NOT NULL,
@@ -106,7 +94,6 @@ def init_db(con: duckdb.DuckDBPyConnection):
         )
     """)
 
-    # --- Auto-categorization rules (override MCC) ---
     _seq(con, "rules_seq")
     con.execute("""
         CREATE TABLE IF NOT EXISTS categorization_rules (
@@ -118,7 +105,6 @@ def init_db(con: duckdb.DuckDBPyConnection):
         )
     """)
 
-    # --- Per-category monthly budgets ---
     _seq(con, "budgets_seq")
     con.execute("""
         CREATE TABLE IF NOT EXISTS budgets (
@@ -129,7 +115,6 @@ def init_db(con: duckdb.DuckDBPyConnection):
         )
     """)
 
-    # --- Tags (M:M via transaction_tags) ---
     _seq(con, "tags_seq")
     con.execute("""
         CREATE TABLE IF NOT EXISTS tags (
@@ -145,7 +130,6 @@ def init_db(con: duckdb.DuckDBPyConnection):
         )
     """)
 
-    # --- Derived: recurring payments / subscriptions ---
     _seq(con, "recurring_seq")
     con.execute("""
         CREATE TABLE IF NOT EXISTS recurring_payments (
@@ -161,7 +145,6 @@ def init_db(con: duckdb.DuckDBPyConnection):
         )
     """)
 
-    # --- Derived: anomalous spending ---
     con.execute("""
         CREATE TABLE IF NOT EXISTS anomalies (
             transaction_id VARCHAR PRIMARY KEY REFERENCES transactions(id),
@@ -174,7 +157,6 @@ def init_db(con: duckdb.DuckDBPyConnection):
         )
     """)
 
-    # --- Sync journal ---
     _seq(con, "sync_log_seq")
     con.execute("""
         CREATE TABLE IF NOT EXISTS sync_log (

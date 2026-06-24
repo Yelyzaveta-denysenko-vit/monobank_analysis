@@ -1,15 +1,8 @@
-"""Category reference and MCC -> category mapping.
-
-Source of truth for the `categories` and `mcc_map` tables. This logic used to
-live as a giant CASE inside the Rill model; it is now a normalized reference.
-Category names are user-facing (shown in dashboards), so they are in Ukrainian.
-"""
-
 import duckdb
 
 from config import log
 
-# (group, category, kind, [list of MCCs])
+# (група, категорія, тип, [коди MCC])
 CATEGORY_TREE = [
     ("Їжа", "Продукти", "expense", [5411, 5412]),
     ("Їжа", "М'ясо/Риба", "expense", [5422]),
@@ -66,12 +59,11 @@ CATEGORY_TREE = [
     ("Фінанси", "Благодійність", "expense", [8398]),
 ]
 
-# Fallback category for unknown MCCs
+# резервна категорія для невідомих MCC
 FALLBACK_CATEGORY = ("Інше", "Інше", "expense")
 
 
 def seed_taxonomy(con: duckdb.DuckDBPyConnection):
-    """Populate `categories` and `mcc_map`. Idempotent (INSERT OR REPLACE)."""
     log("Seeding category reference...")
 
     rows = list(CATEGORY_TREE) + [(*FALLBACK_CATEGORY, [])]

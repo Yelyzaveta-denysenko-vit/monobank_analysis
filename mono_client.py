@@ -1,5 +1,3 @@
-"""External API clients: Monobank (accounts, statements) and NBU (FX rates)."""
-
 import time
 from datetime import datetime
 
@@ -24,7 +22,7 @@ def get_client_info() -> dict:
 
 
 def fetch_statement(account_id: str, from_ts: int, to_ts: int) -> list[dict]:
-    """Account statement, split into 31-day chunks (API limit)."""
+    # виписка розбивається на частини по 31 день (обмеження API)
     max_range = 31 * 24 * 60 * 60
     all_txs: list[dict] = []
 
@@ -70,11 +68,8 @@ def fetch_statement(account_id: str, from_ts: int, to_ts: int) -> list[dict]:
 
 
 def fetch_nbu_rates(date: datetime) -> list[dict]:
-    """NBU rates for a date. Returns a list of {r030, cc, rate} (UAH per unit).
-
-    On weekends/holidays NBU may return an empty list; in that case the rate is
-    taken from the nearest previous date during normalization (ASOF join).
-    """
+    # у вихідні/свята НБУ може повернути порожній список — тоді курс
+    # береться за найближчу попередню дату під час нормалізації (ASOF join)
     ymd = date.strftime("%Y%m%d")
     resp = requests.get(f"{NBU_API_BASE}/exchange?date={ymd}&json", timeout=30)
     resp.raise_for_status()

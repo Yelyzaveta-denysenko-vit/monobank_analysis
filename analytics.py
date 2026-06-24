@@ -1,10 +1,3 @@
-"""Analytical algorithms over the normalized data.
-
-- detect_recurring   — find recurring payments / subscriptions;
-- detect_anomalies   — unusual spending (large vs the merchant's usual);
-- forecast_and_alert — month-end spend forecast and budget comparison.
-"""
-
 import statistics
 from datetime import datetime, timedelta
 
@@ -14,7 +7,7 @@ from config import log
 
 
 def _cv(values: list[float]) -> float:
-    """Coefficient of variation (std/mean). 0 = perfectly regular."""
+    # коефіцієнт варіації (σ/μ); 0 — ідеально стабільно
     if len(values) < 2:
         return 1.0
     m = statistics.mean(values)
@@ -24,8 +17,6 @@ def _cv(values: list[float]) -> float:
 
 
 def detect_recurring(con: duckdb.DuckDBPyConnection, min_occurrences: int = 3):
-    """Recurring payment: >=3 expenses at one merchant with a stable interval
-    and a stable amount. Period = median of intervals between operations."""
     log("Analytics: detecting recurring payments...")
     con.execute("DELETE FROM recurring_payments")
 
@@ -52,7 +43,7 @@ def detect_recurring(con: duckdb.DuckDBPyConnection, min_occurrences: int = 3):
             continue
 
         period = statistics.median(intervals)
-        if not (5 <= period <= 45):  # weekly to monthly cycles
+        if not (5 <= period <= 45):  # від тижневого до місячного циклу
             continue
 
         interval_cv = _cv(intervals)
@@ -60,7 +51,7 @@ def detect_recurring(con: duckdb.DuckDBPyConnection, min_occurrences: int = 3):
         if interval_cv > 0.4 or amount_cv > 0.35:
             continue
 
-        # confidence grows as interval and amount get more stable
+        # впевненість зростає зі стабільністю інтервалу й суми
         confidence = round(max(0.0, 1 - (interval_cv + amount_cv) / 2), 2)
         last_date = max(times)
         next_expected = last_date + timedelta(days=int(round(period)))
@@ -81,12 +72,8 @@ def detect_recurring(con: duckdb.DuckDBPyConnection, min_occurrences: int = 3):
 
 def detect_anomalies(con: duckdb.DuckDBPyConnection, ratio_threshold: float = 3.0,
                      min_merchant_tx: int = 4, floor_uah: float = 300.0):
-    """Anomaly: an expense at a known merchant that is noticeably larger than usual.
-
-    Take merchants with >= min_merchant_tx expenses, the median spend per merchant,
-    and flag operations where the amount >= ratio_threshold * median and above an
-    absolute floor. The median is robust to outliers, and the multiplicative rule
-    is easy to explain: 'usually ~X, here N times more'."""
+    # аномалія = витрата у відомого продавця, помітно більша за медіанну для нього
+    # (медіана стійка до викидів, кратність легко пояснити)
     log("Analytics: detecting anomalous spending...")
     con.execute("DELETE FROM anomalies")
 
@@ -114,9 +101,7 @@ def detect_anomalies(con: duckdb.DuckDBPyConnection, ratio_threshold: float = 3.
 
 
 def forecast_and_alert(con: duckdb.DuckDBPyConnection):
-    """Forecast current-month spend (run-rate) and compare against budgets."""
     log("Analytics: spend forecast and budget check...")
-    # Forecast for the latest month that has data
     row = con.execute("SELECT MAX(time) FROM transactions").fetchone()
     if not row or not row[0]:
         return
@@ -125,7 +110,7 @@ def forecast_and_alert(con: duckdb.DuckDBPyConnection):
     days_in_month = ((last_dt.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)).day
     day = last_dt.day
 
-    # Transfers between own accounts are not counted as spending
+    # перекази між власними рахунками не рахуємо як витрати
     spent = con.execute("""
         SELECT COALESCE(SUM(ABS(t.amount_uah)), 0)
         FROM transactions t JOIN categories c ON t.category_id = c.id

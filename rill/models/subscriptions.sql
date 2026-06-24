@@ -1,5 +1,3 @@
--- Recurring payments / subscriptions found by the detect_recurring algorithm.
--- monthly_cost_uah scales each payment to a monthly cost based on its period.
 SELECT
     rp.id,
     COALESCE(m.normalized_name, '(невідомо)') AS merchant,

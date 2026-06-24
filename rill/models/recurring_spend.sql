@@ -1,7 +1,3 @@
--- Actual transactions of recurring-payment merchants, enriched with the
--- subscription's metadata. Unlike the `subscriptions` summary (one row per
--- subscription), this is one row per real charge, so it has a proper time axis
--- for charts and a date filter.
 SELECT
     t.id,
     t.time,

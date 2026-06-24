@@ -1,5 +1,3 @@
-"""Raw data ingestion from Monobank: accounts and transaction statements."""
-
 import time
 from datetime import datetime
 
@@ -66,7 +64,7 @@ def _save(con: duckdb.DuckDBPyConnection, account_id: str, txs: list[dict]) -> i
             ])
             inserted += 1
         except Exception:
-            pass  # duplicate — skip
+            pass
     return inserted
 
 

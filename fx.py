@@ -1,12 +1,3 @@
-"""Multi-currency support: NBU rates and normalization to hryvnia.
-
-Important: in Monobank the `amount` field is already in the ACCOUNT currency
-(operation_amount is in the operation currency). So for a hryvnia account the
-amount is already in UAH and no conversion is needed; only operations on foreign
-accounts (e.g. EUR) need NBU-rate conversion. For weekends/holidays the nearest
-rate is taken via an ASOF join.
-"""
-
 import time
 from datetime import datetime
 
@@ -17,7 +8,6 @@ from mono_client import fetch_nbu_rates
 
 
 def sync_rates(con: duckdb.DuckDBPyConnection):
-    """Backfill NBU rates for every date that has non-hryvnia-account operations."""
     dates = con.execute(f"""
         SELECT DISTINCT CAST(t.time AS DATE) AS d
         FROM transactions t JOIN accounts a ON a.id = t.account_id
@@ -56,17 +46,17 @@ def sync_rates(con: duckdb.DuckDBPyConnection):
 
 
 def normalize_amounts(con: duckdb.DuckDBPyConnection):
-    """Fill amount_uah for every transaction."""
     log("FX: normalizing amounts to UAH...")
 
-    # Base-currency accounts — amount is already in UAH
+    # у Monobank amount уже у валюті рахунку: для гривневих рахунків
+    # конвертація не потрібна
     con.execute(f"""
         UPDATE transactions AS t SET amount_uah = t.amount
         FROM accounts AS a
         WHERE a.id = t.account_id AND a.currency_code = {BASE_CURRENCY_CODE}
     """)
 
-    # Foreign accounts: rate for the ACCOUNT currency on date <= operation date
+    # іноземні рахунки: курс валюти рахунку на дату ≤ дати операції
     con.execute(f"""
         CREATE OR REPLACE TEMP TABLE _conv AS
         SELECT t.id, t.amount * f.rate_uah AS amt_uah
@@ -82,7 +72,7 @@ def normalize_amounts(con: duckdb.DuckDBPyConnection):
         FROM _conv AS c WHERE t.id = c.id
     """)
 
-    # Tail (date earlier than the earliest rate) — nearest forward rate
+    # операції, раніші за найдавніший курс — найближчий курс уперед
     con.execute(f"""
         CREATE OR REPLACE TEMP TABLE _conv_fwd AS
         SELECT t.id, t.amount * f.rate_uah AS amt_uah

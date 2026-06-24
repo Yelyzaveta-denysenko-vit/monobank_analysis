@@ -1,18 +1,12 @@
-"""Merchant dimension: name normalization, dedup, aggregates.
-
-The merchant name comes from counter_name (if present), otherwise description.
-Normalization collapses case/whitespace so 'Albert' and 'ALBERT ' are one entity.
-"""
-
 import duckdb
 
 from config import log
 
 
 def build_merchants(con: duckdb.DuckDBPyConnection):
-    """Create merchant records and assign merchant_id to transactions."""
     log("Building merchant dimension...")
 
+    # зведення регістру/пробілів: «Albert» і «ALBERT » стають одним продавцем
     con.execute(r"""
         CREATE OR REPLACE TEMP VIEW _tx_norm AS
         SELECT
@@ -42,7 +36,7 @@ def build_merchants(con: duckdb.DuckDBPyConnection):
 
 
 def refresh_stats(con: duckdb.DuckDBPyConnection):
-    """Recompute merchant aggregates. Call after FX normalization."""
+    # перерахунок агрегатів продавців; викликати після нормалізації валют
     con.execute("""
         UPDATE merchants AS m
         SET first_seen = s.fs,

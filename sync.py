@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-"""Monobank BI pipeline orchestrator.
-
-Stages: raw ingestion -> categorization -> merchants -> rates/normalization ->
-aggregates -> analytics -> tags -> Parquet export.
-
-Supports a --enrich-only flag: skip the Monobank API and rebuild only the
-derived data on top of already-loaded transactions.
-"""
-
 import os
 import sys
 
@@ -26,7 +17,6 @@ from taxonomy import seed_taxonomy
 
 
 def enrich(con: duckdb.DuckDBPyConnection):
-    """All derived steps on top of the raw transactions."""
     fallback_id = seed_taxonomy(con)
     categorize.seed_example_rules(con)
     categorize.assign_categories(con, fallback_id)
@@ -36,8 +26,8 @@ def enrich(con: duckdb.DuckDBPyConnection):
     fx.sync_rates(con)
     fx.normalize_amounts(con)
 
-    # Clear derived tables that reference merchants (FK) — otherwise DuckDB
-    # forbids UPDATE-ing merchant rows that are still referenced.
+    # звільняємо похідні таблиці від посилань на merchants (FK), інакше
+    # DuckDB не дозволить оновити рядки продавців
     con.execute("DELETE FROM recurring_payments")
     merchants.refresh_stats(con)
 

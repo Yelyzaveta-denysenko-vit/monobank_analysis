@@ -1,9 +1,3 @@
-"""Transaction categorization: rules (by priority) -> MCC -> fallback.
-
-A rule with a higher priority value overrides the MCC-based category and
-weaker rules.
-"""
-
 import duckdb
 
 from config import log
@@ -12,7 +6,7 @@ from config import log
 def assign_categories(con: duckdb.DuckDBPyConnection, fallback_id: int):
     log("Categorizing transactions...")
 
-    # 1) Base category from MCC
+    # 1) базова категорія за MCC
     con.execute("""
         UPDATE transactions AS t
         SET category_id = m.category_id
@@ -20,13 +14,13 @@ def assign_categories(con: duckdb.DuckDBPyConnection, fallback_id: int):
         WHERE t.mcc = m.mcc
     """)
 
-    # 2) Unknown MCCs -> fallback
+    # 2) невідомі MCC → резервна категорія
     con.execute(
         "UPDATE transactions SET category_id = ? WHERE category_id IS NULL",
         [fallback_id],
     )
 
-    # 3) User rules override MCC (apply weaker ones first)
+    # 3) користувацькі правила перекривають MCC (слабші застосовуються першими)
     rules = con.execute("""
         SELECT pattern, field, category_id, priority
         FROM categorization_rules
@@ -56,9 +50,8 @@ def assign_categories(con: duckdb.DuckDBPyConnection, fallback_id: int):
 
 
 def seed_example_rules(con: duckdb.DuckDBPyConnection):
-    """Example rules (idempotent). Recognizes common CZ/UA merchants."""
+    # (підрядок, поле, назва категорії, пріоритет)
     examples = [
-        # (pattern, field, category_name, priority)
         ("ALBERT", "description", "Продукти", 200),
         ("BILLA", "description", "Продукти", 200),
         ("LIDL", "description", "Продукти", 200),

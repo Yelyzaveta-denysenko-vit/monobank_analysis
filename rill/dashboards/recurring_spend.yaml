@@ -1,0 +1,32 @@
+type: explore
+title: Підписки — витрати у часі
+metrics_view: recurring_spend
+
+dimensions:
+  - time
+  - merchant
+  - category
+  - category_group
+
+measures:
+  - total_uah
+  - tx_count
+  - sub_count
+  - avg_payment
+
+defaults:
+  time_range: P12M
+  measures:
+    - total_uah
+    - tx_count
+    - sub_count
+time_ranges:
+  - P3M
+  - P6M
+  - P12M
+  - rill-MTD
+  - rill-QTD
+  - rill-YTD
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC

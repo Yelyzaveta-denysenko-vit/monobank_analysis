@@ -1,0 +1,30 @@
+type: metrics_view
+model: budget_status
+
+dimensions:
+  - name: month
+    column: month
+    label: Місяць
+  - name: category
+    column: category
+    label: Категорія
+  - name: category_group
+    column: category_group
+    label: Група категорій
+  - name: status
+    column: status
+    label: Статус
+
+measures:
+  - name: total_limit
+    expression: "SUM(limit_uah)"
+    label: Ліміт, ₴
+    format_d3: ",.2f"
+  - name: total_used
+    expression: "SUM(used_uah)"
+    label: Витрачено, ₴
+    format_d3: ",.2f"
+  - name: total_remaining
+    expression: "SUM(remaining_uah)"
+    label: Залишок, ₴
+    format_d3: ",.2f"

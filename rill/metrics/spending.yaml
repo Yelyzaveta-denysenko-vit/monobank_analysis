@@ -1,0 +1,81 @@
+type: metrics_view
+model: transactions
+timeseries: time
+smallest_time_grain: day
+first_day_of_week: 1
+
+dimensions:
+  - name: account_name
+    column: account_name
+    label: Рахунок
+  - name: category_group
+    column: category_group
+    label: Група категорій
+  - name: category
+    column: category
+    label: Категорія
+  - name: merchant
+    column: merchant
+    label: Мерчант
+  - name: description
+    column: description
+    label: Опис
+  - name: tx_type
+    column: tx_type
+    label: Тип
+  - name: op_currency
+    column: op_currency
+    label: Валюта операції
+  - name: recurring_flag
+    column: recurring_flag
+    label: Регулярність
+  - name: anomaly_flag
+    column: anomaly_flag
+    label: Аномалія
+  - name: tags
+    column: tags
+    label: Теги
+  - name: hold
+    column: hold
+    label: Холд
+  - name: comment
+    column: comment
+    label: Коментар
+  - name: day_of_week
+    column: day_of_week
+    label: День тижня
+  - name: month
+    column: month
+    label: Місяць
+
+measures:
+  - name: total_spent
+    expression: "SUM(CASE WHEN amount_uah < 0 THEN ABS(amount_uah) ELSE 0 END)"
+    label: Витрати, ₴
+    format_d3: ",.2f"
+    valid_percent_of_total: true
+  - name: total_income
+    expression: "SUM(CASE WHEN amount_uah > 0 THEN amount_uah ELSE 0 END)"
+    label: Доходи, ₴
+    format_d3: ",.2f"
+    valid_percent_of_total: true
+  - name: net
+    expression: "SUM(amount_uah)"
+    label: Нетто, ₴
+    format_d3: ",.2f"
+  - name: tx_count
+    expression: "COUNT(*)"
+    label: Транзакцій
+    format_preset: humanize
+  - name: avg_check
+    expression: "AVG(CASE WHEN amount_uah < 0 THEN ABS(amount_uah) END)"
+    label: Середній чек, ₴
+    format_d3: ",.2f"
+  - name: max_expense
+    expression: "MAX(CASE WHEN amount_uah < 0 THEN ABS(amount_uah) END)"
+    label: Макс. витрата, ₴
+    format_d3: ",.2f"
+  - name: total_cashback
+    expression: "SUM(cashback_amount)"
+    label: Кешбек, ₴
+    format_d3: ",.2f"

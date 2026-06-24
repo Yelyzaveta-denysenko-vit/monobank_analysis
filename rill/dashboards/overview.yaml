@@ -1,0 +1,58 @@
+type: explore
+title: Monobank — Аналітика витрат
+metrics_view: spending
+
+dimensions:
+  - time
+  - account_name
+  - category_group
+  - category
+  - merchant
+  - description
+  - tx_type
+  - op_currency
+  - recurring_flag
+  - anomaly_flag
+  - tags
+  - hold
+  - comment
+  - month
+  - day_of_week
+
+measures:
+  - total_spent
+  - total_income
+  - net
+  - tx_count
+  - avg_check
+  - max_expense
+  - total_cashback
+
+defaults:
+  time_range: P3M
+  dimensions:
+    - category_group
+  measures:
+    - total_spent
+
+time_zones:
+  - UTC
+  - Europe/Kyiv
+  - Europe/Prague
+  - Europe/London
+  - Europe/Paris
+time_ranges:
+  - PT24H
+  - P7D
+  - P14D
+  - P4W
+  - P3M
+  - P12M
+  - rill-TD
+  - rill-WTD
+  - rill-MTD
+  - rill-QTD
+  - rill-YTD
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC

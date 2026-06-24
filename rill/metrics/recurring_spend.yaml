@@ -1,0 +1,34 @@
+type: metrics_view
+model: recurring_spend
+timeseries: time
+smallest_time_grain: day
+first_day_of_week: 1
+
+dimensions:
+  - name: merchant
+    column: merchant
+    label: Мерчант
+  - name: category
+    column: category
+    label: Категорія
+  - name: category_group
+    column: category_group
+    label: Група категорій
+
+measures:
+  - name: total_uah
+    expression: "SUM(abs_uah)"
+    label: Витрати на підписки, ₴
+    format_d3: ",.2f"
+  - name: tx_count
+    expression: "COUNT(*)"
+    label: Списань
+    format_preset: humanize
+  - name: sub_count
+    expression: "COUNT(DISTINCT merchant)"
+    label: Підписок
+    format_preset: humanize
+  - name: avg_payment
+    expression: "AVG(abs_uah)"
+    label: Середнє списання, ₴
+    format_d3: ",.2f"

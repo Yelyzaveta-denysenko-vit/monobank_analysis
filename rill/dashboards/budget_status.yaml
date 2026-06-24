@@ -1,0 +1,20 @@
+type: explore
+title: Бюджети — план/факт
+metrics_view: budget_status
+
+dimensions:
+  - month
+  - category
+  - category_group
+  - status
+
+measures:
+  - total_limit
+  - total_used
+  - total_remaining
+
+defaults:
+  measures:
+    - total_limit
+    - total_used
+    - total_remaining

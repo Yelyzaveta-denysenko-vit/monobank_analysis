@@ -1,0 +1,33 @@
+type: metrics_view
+model: subscriptions
+# No time axis: subscriptions are a list, not a time series. Otherwise the
+# explore would filter payments by next_expected_date and some would disappear.
+
+dimensions:
+  - name: merchant
+    column: merchant
+    label: Мерчант
+  - name: category
+    column: category
+    label: Категорія
+  - name: category_group
+    column: category_group
+    label: Група категорій
+
+measures:
+  - name: monthly_total
+    expression: "SUM(monthly_cost_uah)"
+    label: Місячна вартість, ₴
+    format_d3: ",.2f"
+  - name: sub_count
+    expression: "COUNT(*)"
+    label: Підписок
+    format_preset: humanize
+  - name: avg_confidence
+    expression: "AVG(confidence)"
+    label: Сер. впевненість
+    format_d3: ".0%"
+  - name: typical_total
+    expression: "SUM(typical_amount_uah)"
+    label: Сума платежів, ₴
+    format_d3: ",.2f"

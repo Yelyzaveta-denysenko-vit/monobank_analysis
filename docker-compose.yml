@@ -1,0 +1,51 @@
+services:
+  sync:
+    build:
+      context: .
+      dockerfile: Dockerfile.sync
+    environment:
+      - MONO_TOKEN=${MONO_TOKEN}
+      - DB_PATH=/data/db/mono.duckdb
+      - PARQUET_DIR=/data/parquet
+    volumes:
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "test", "-f", "/data/parquet/transactions.parquet"]
+      interval: 5s
+      timeout: 3s
+      retries: 120
+      start_period: 10s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    environment:
+      - DB_PATH=/data/db/mono.duckdb
+      - PARQUET_DIR=/data/parquet
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    depends_on:
+      sync:
+        condition: service_healthy
+    restart: unless-stopped
+
+  rill:
+    image: rilldata/rill:latest
+    platform: linux/amd64
+    ports:
+      - "9010:9009"
+    volumes:
+      - ./data:/data:ro
+      - ./rill:/project
+    command: >
+      start /project
+      --port 9009
+      --no-open
+    depends_on:
+      sync:
+        condition: service_healthy
+    restart: unless-stopped

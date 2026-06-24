@@ -1,0 +1,97 @@
+"""Category reference and MCC -> category mapping.
+
+Source of truth for the `categories` and `mcc_map` tables. This logic used to
+live as a giant CASE inside the Rill model; it is now a normalized reference.
+Category names are user-facing (shown in dashboards), so they are in Ukrainian.
+"""
+
+import duckdb
+
+from config import log
+
+# (group, category, kind, [list of MCCs])
+CATEGORY_TREE = [
+    ("Їжа", "Продукти", "expense", [5411, 5412]),
+    ("Їжа", "М'ясо/Риба", "expense", [5422]),
+    ("Їжа", "Солодощі", "expense", [5441]),
+    ("Їжа", "Молочні продукти", "expense", [5451]),
+    ("Їжа", "Пекарні", "expense", [5462]),
+    ("Їжа", "Продукти (інше)", "expense", [5499]),
+    ("Їжа", "Ресторани/Кафе", "expense", [5812]),
+    ("Їжа", "Бари", "expense", [5813]),
+    ("Їжа", "Фастфуд", "expense", [5814]),
+    ("Транспорт", "Ж/Д квитки", "expense", [4011, 4112]),
+    ("Транспорт", "Громадський транспорт", "expense", [4111, 4131]),
+    ("Транспорт", "Таксі", "expense", [4121]),
+    ("Транспорт", "АЗС", "expense", [5541, 5542, 5983]),
+    ("Транспорт", "Платні дороги", "expense", [4784]),
+    ("Транспорт", "Авто", "expense", [5531, 5532, 5533, 7531, 7534, 7535, 7538, 7542]),
+    ("Покупки", "Одяг", "expense", [5611, 5621, 5631, 5641, 5651, 5691, 5699, 5137, 5139]),
+    ("Покупки", "Взуття", "expense", [5661]),
+    ("Покупки", "Електроніка", "expense", [5732]),
+    ("Покупки", "Цифрові товари", "expense", [5734, 5816, 5817, 5818]),
+    ("Покупки", "Підписки", "expense", [5815, 5968]),
+    ("Покупки", "Будматеріали", "expense", [5200, 5211, 5231, 5251, 5261]),
+    ("Покупки", "Дім/Техніка", "expense", [5712, 5713, 5714, 5718, 5719, 5722]),
+    ("Покупки", "Зоотовари", "expense", [5995]),
+    ("Покупки", "Спорттовари", "expense", [5941]),
+    ("Покупки", "Книги", "expense", [5942]),
+    ("Покупки", "Ювелірні", "expense", [5944]),
+    ("Покупки", "Іграшки", "expense", [5945]),
+    ("Покупки", "Квіти", "expense", [5992]),
+    ("Покупки", "Сигарети", "expense", [5993]),
+    ("Покупки", "Косметика", "expense", [5977]),
+    ("Здоров'я", "Аптеки", "expense", [5912]),
+    ("Здоров'я", "Медицина", "expense", [8011, 8021, 8031, 8041, 8042, 8049, 8050, 8062, 8071, 8099]),
+    ("Здоров'я", "Краса/СПА", "expense", [7230, 7297, 7298]),
+    ("Розваги", "Кінотеатри", "expense", [7832]),
+    ("Розваги", "Концерти/Театри", "expense", [7922, 7929]),
+    ("Розваги", "Спортклуби", "expense", [7997]),
+    ("Розваги", "Розваги", "expense", [7991, 7992, 7993, 7994, 7996, 7998, 7999]),
+    ("Послуги", "Зв'язок", "expense", [4812, 4813, 4814]),
+    ("Послуги", "Комуналка", "expense", [4899, 4900]),
+    ("Послуги", "IT-послуги", "expense", [7372, 7379]),
+    ("Послуги", "Юристи", "expense", [8111]),
+    ("Послуги", "Пошта", "expense", [9402]),
+    ("Подорожі", "Готелі", "expense", [7011]),
+    ("Подорожі", "Оренда житла", "expense", [6513]),
+    ("Освіта", "Освіта", "expense", [8211, 8220, 8241, 8244, 8249, 8299]),
+    ("Фінанси", "Перекази/Платежі", "transfer", [4829]),
+    ("Фінанси", "Зняття готівки", "transfer", [6010, 6011]),
+    ("Фінанси", "Інвестиції", "transfer", [6211]),
+    ("Фінанси", "Страхування", "expense", [6300, 6399]),
+    ("Фінанси", "Поповнення карток", "transfer", [6540]),
+    ("Фінанси", "Податки", "expense", [9311, 7276]),
+    ("Фінанси", "Штрафи", "expense", [9211, 9222]),
+    ("Фінанси", "Благодійність", "expense", [8398]),
+]
+
+# Fallback category for unknown MCCs
+FALLBACK_CATEGORY = ("Інше", "Інше", "expense")
+
+
+def seed_taxonomy(con: duckdb.DuckDBPyConnection):
+    """Populate `categories` and `mcc_map`. Idempotent (INSERT OR REPLACE)."""
+    log("Seeding category reference...")
+
+    rows = list(CATEGORY_TREE) + [(*FALLBACK_CATEGORY, [])]
+    cat_id = {}
+    for i, (group, name, kind, _) in enumerate(rows, start=1):
+        cat_id[name] = i
+        con.execute(
+            "INSERT OR REPLACE INTO categories (id, name, group_name, kind) VALUES (?, ?, ?, ?)",
+            [i, name, group, kind],
+        )
+
+    con.execute("DELETE FROM mcc_map")
+    for _, name, _, mccs in CATEGORY_TREE:
+        for mcc in mccs:
+            con.execute(
+                "INSERT OR REPLACE INTO mcc_map (mcc, category_id) VALUES (?, ?)",
+                [mcc, cat_id[name]],
+            )
+
+    n_cat = con.execute("SELECT COUNT(*) FROM categories").fetchone()[0]
+    n_mcc = con.execute("SELECT COUNT(*) FROM mcc_map").fetchone()[0]
+    log(f"  Categories: {n_cat}, MCC mappings: {n_mcc}")
+    return cat_id["Інше"]

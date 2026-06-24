@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.csv
+.DS_Store
+*.duckdb
+*.duckdb.wal
+.claude/
+rill/tmp/
+data/
